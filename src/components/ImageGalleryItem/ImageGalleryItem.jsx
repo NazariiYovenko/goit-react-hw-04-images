@@ -3,32 +3,23 @@ import {
   ImageGalleryItemImage,
   ImageGalleryItemWrapper,
 } from './ImageGalleryItem.styled';
+import { useState } from 'react';
 
-import { Component } from 'react';
+const ImageGalleryItem = ({ id, largeImageURL, webformatURL, tags }) => {
+  const [showModal, setShowModal] = useState(false);
 
-export default class ImageGalleryItem extends Component {
-  state = {
-    showModal: false,
-  };
+  const toggleModal = () => setShowModal(prev => !prev);
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
-  };
+  return (
+    <ImageGalleryItemWrapper onClick={toggleModal}>
+      <ImageGalleryItemImage id={id} src={webformatURL} alt={tags} />
+      {showModal && (
+        <Modal onClose={toggleModal}>
+          <img src={largeImageURL} alt={tags} />
+        </Modal>
+      )}
+    </ImageGalleryItemWrapper>
+  );
+};
 
-  render() {
-    const { showModal } = this.state;
-    const { id, largeImageURL, webformatURL, tags } = this.props;
-    return (
-      <ImageGalleryItemWrapper onClick={this.toggleModal}>
-        <ImageGalleryItemImage id={id} src={webformatURL} alt={tags} />
-        {showModal && (
-          <Modal onClose={this.toggleModal}>
-            <img src={largeImageURL} alt={tags} />
-          </Modal>
-        )}
-      </ImageGalleryItemWrapper>
-    );
-  }
-}
+export default ImageGalleryItem;

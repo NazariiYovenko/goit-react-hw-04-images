@@ -2,101 +2,103 @@ import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
 import { ImageGalleryWrapper, Message } from './ImageGallery.styled';
 import { toast } from 'react-toastify';
 import { fetchGalleryImages } from 'services/apiGalery';
-import { Component } from 'react';
 import Loader from 'components/Loader/Loader';
 import Button from 'components/Button/Button';
+import { useEffect, useState } from 'react';
 
-export default class ImageGallery extends Component {
-  state = {
-    gallery: [],
-    page: 1,
-    error: false,
-    totalHits: 0,
-    loading: false,
-  };
+const ImageGallery = ({ query }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [gallery, setGallery] = useState([]);
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState(false);
+  const [totalHits, setTotalHits] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  componentDidUpdate(prevProps, prevState) {
-    const { query } = this.props;
-    const prevQuery = prevProps.query;
-    const { page } = this.state;
-    const prevPage = prevState.page;
-
-    if (prevQuery !== query) {
-      this.setState({ loading: true, page: 1, gallery: [] });
-      if (page === 1) {
-        this.fetchImages(query, page);
-      }
-    } else if (prevPage !== page) {
-      this.setState({ loading: true });
-      this.fetchImages(query, page);
-    }
+  function reset() {
+    setGallery([]);
+    setTotalHits(0);
+    setPage(1);
+    setError(false);
+    setLoading(false);
   }
 
-  fetchImages = async (query, page) => {
-    try {
-      const gallery = await fetchGalleryImages(query, page);
-      const { hits, totalHits } = gallery;
-      if (!hits.length) {
-        return toast.warn('Please, enter correct search word!');
-      }
-      const newItems = hits.map(
-        ({ id, tags, webformatURL, largeImageURL }) => ({
-          id,
-          tags,
-          webformatURL,
-          largeImageURL,
-        })
-      );
-      this.setState(prevState => ({
-        gallery: [...prevState.gallery, ...newItems],
-        totalHits,
-      }));
-    } catch (error) {
-      console.log(error);
-      this.setState({ error: true, totalHits: 0 });
-    } finally {
-      this.setState({ loading: false });
+  useEffect(() => {
+    reset();
+    setSearchQuery(query);
+  }, [query]);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      return;
     }
+    setLoading(true);
+
+    const fetchImages = async (query, page) => {
+      try {
+        const gallery = await fetchGalleryImages(query, page);
+        const { hits, totalHits } = gallery;
+        if (!hits.length) {
+          return toast.warn('Please, enter correct search word!');
+        }
+        if (hits.length === totalHits) {
+          return toast.warn('You have viewed the entire list of images!');
+        }
+        const newItems = hits.map(
+          ({ id, tags, webformatURL, largeImageURL }) => ({
+            id,
+            tags,
+            webformatURL,
+            largeImageURL,
+          })
+        );
+        setGallery(prev => [...prev, ...newItems]);
+        setTotalHits(totalHits);
+      } catch (error) {
+        toast.error(error.message);
+        setError(true);
+        reset();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchImages(searchQuery, page);
+  }, [searchQuery, page]);
+
+  const loadMore = () => {
+    setPage(prev => prev + 1);
   };
 
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
-  };
+  return (
+    <>
+      {searchQuery === '' && (
+        <Message>Please enter a word to start the search</Message>
+      )}
 
-  render() {
-    const { error, loading, gallery, totalHits } = this.state;
-    const { query } = this.props;
-    return (
-      <>
-        {query === '' && (
-          <Message>Please enter a word to start the search</Message>
-        )}
+      {!error && (
+        <>
+          <ImageGalleryWrapper>
+            {gallery.map(({ id, largeImageURL, webformatURL, tags }) => (
+              <ImageGalleryItem
+                key={id}
+                id={id}
+                largeImageURL={largeImageURL}
+                webformatURL={webformatURL}
+                tags={tags}
+              />
+            ))}
+          </ImageGalleryWrapper>
+          {0 < gallery.length && gallery.length < totalHits && !loading && (
+            <Button onClick={loadMore} />
+          )}
+        </>
+      )}
 
-        {!error && (
-          <>
-            <ImageGalleryWrapper>
-              {gallery.map(({ id, largeImageURL, webformatURL, tags }) => (
-                <ImageGalleryItem
-                  key={id}
-                  id={id}
-                  largeImageURL={largeImageURL}
-                  webformatURL={webformatURL}
-                  tags={tags}
-                />
-              ))}
-            </ImageGalleryWrapper>
-            {gallery.length < totalHits && gallery.length !== 0 && (
-              <Button onClick={this.loadMore} />
-            )}
-          </>
-        )}
+      {loading && <Loader />}
 
-        {loading && <Loader />}
+      {error && <Message>Oops ... Something goes wrong </Message>}
+    </>
+  );
+};
 
-        {error && <Message>Oops ... Something goes wrong </Message>}
-      </>
-    );
-  }
-}
+export default ImageGallery;

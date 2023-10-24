@@ -7,52 +7,47 @@ import {
 } from './Searchbar.styled';
 
 import { FaSearch } from 'react-icons/fa';
+import { useState } from 'react';
 
-import { Component } from 'react';
+const Searchbar = ({ onSubmit }) => {
+  const [query, setQuery] = useState('');
 
-export default class Searchbar extends Component {
-  state = {
-    query: '',
-  };
+  const handleChange = event =>
+    setQuery(event.currentTarget.value.toLowerCase());
 
-  handleChange = event => {
-    this.setState({ query: event.currentTarget.value.toLowerCase() });
-  };
-
-  handleSubmit = event => {
-    const { query } = this.state;
+  const handleSubmit = event => {
     event.preventDefault();
     if (query.trim() === '') {
       toast.warn('Please, enter correct search word!');
       return;
     }
-    this.props.onSubmit(query.trim());
-    this.setState({ query: '' });
+    onSubmit(query.trim());
+    setQuery('');
   };
 
-  render() {
-    return (
-      <>
-        <SearchbarWrapper>
-          <SearchForm onSubmit={this.handleSubmit}>
-            <SearchFormButton type="submit">
-              <FaSearch
-                style={{ fill: 'darkblue', height: '25px', width: '25px' }}
-              />
-            </SearchFormButton>
-
-            <SearchFormInput
-              type="text"
-              name="query"
-              autoComplete="off"
-              autoFocus
-              placeholder="Search images and photos"
-              value={this.state.query}
-              onChange={this.handleChange}
+  return (
+    <>
+      <SearchbarWrapper>
+        <SearchForm onSubmit={handleSubmit}>
+          <SearchFormButton type="submit">
+            <FaSearch
+              style={{ fill: 'darkblue', height: '25px', width: '25px' }}
             />
-          </SearchForm>
-        </SearchbarWrapper>
-      </>
-    );
-  }
-}
+          </SearchFormButton>
+
+          <SearchFormInput
+            type="text"
+            name="query"
+            autoComplete="off"
+            autoFocus
+            placeholder="Search images and photos"
+            value={query}
+            onChange={handleChange}
+          />
+        </SearchForm>
+      </SearchbarWrapper>
+    </>
+  );
+};
+
+export default Searchbar;
